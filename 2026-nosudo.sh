@@ -42,12 +42,25 @@ if [[ "$ID" == "ubuntu" ]]; then
 # DEBIAN / PROXMOX
 # =========================
 elif [[ "$ID" == "debian" ]]; then
-  echo "Instalando Docker para Debian / Proxmox..."
+  echo "Instalando Docker para Debian / Proxmox..."  
+    # Eliminar posibles repositorios Docker erróneos (Ubuntu en Debian)
+echo "Eliminando repositorios Docker incorrectos..."
+rm -f 
+rm -f /etc/apt/keyrings/docker.gpg
 
+# Confirmar eliminación
+
+
+apt-get update
   # Eliminar el repo docker de Ubuntu si existe
-  rm -f /etc/apt/sources.list.d/docker.list
+  rm -f /etc/apt/sources.list.d/docker*.list
   rm -f /etc/apt/keyrings/docker.gpg
-
+  if ! grep -r "download.docker.com/linux/ubuntu" /etc/apt/sources.list.d/ > /dev/null 2>&1; then
+    echo "✅ Repositorios Docker para Ubuntu eliminados correctamente"
+  else
+    echo "❌ Quedan referencias a repositorios Docker para Ubuntu"
+    exit 1
+  fi
   # Docker desde repos oficiales de Debian (más seguro)
   apt-get install -y docker.io docker-compose-plugin
 
