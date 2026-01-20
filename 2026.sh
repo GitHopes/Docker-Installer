@@ -5,8 +5,8 @@ read -p "¿Deseas continuar? (s/N): " confirm
 . /etc/os-release
 echo "DEBUG: Sistema detectado: ID='$ID', VERSION_CODENAME='$VERSION_CODENAME'"
 
-rm -f /etc/apt/sources.list.d/docker*.list
-rm -f /etc/apt/keyrings/docker.gpg
+sudo rm -f /etc/apt/sources.list.d/docker*.list
+sudo rm -f /etc/apt/keyrings/docker.gpg
 
 sudo apt-get remove --purge docker docker-engine docker.io containerd runc docker-compose
 sudo rm -rf /var/lib/docker

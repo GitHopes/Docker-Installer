@@ -1,95 +1,43 @@
-#!/usr/bin/env bash
-set -e
-
-echo "⚠️  Este script eliminará Docker y TODOS los contenedores existentes"
+echo "Este script eliminara todos los contenedores que hayan previamente"
 read -p "¿Deseas continuar? (s/N): " confirm
 [[ "$confirm" == "s" || "$confirm" == "S" ]] || exit 1
 
-# Detectar sistema operativo
 . /etc/os-release
 echo "DEBUG: Sistema detectado: ID='$ID', VERSION_CODENAME='$VERSION_CODENAME'"
 
 rm -f /etc/apt/sources.list.d/docker*.list
 rm -f /etc/apt/keyrings/docker.gpg
 
-if ! grep -r "download.docker.com/linux/ubuntu" /etc/apt/sources.list.d/ > /dev/null 2>&1; then
-  echo "✅ Repositorios Docker para Ubuntu eliminados correctamente"
-else
-  echo "❌ Quedan referencias a repositorios Docker para Ubuntu"
-  exit 1
-fi
+apt-get remove --purge docker docker-engine docker.io containerd runc docker-compose
+ rm -rf /var/lib/docker
+ rm -rf /var/lib/containerd
 
-# Eliminar Docker previo (común)
-apt-get remove --purge -y docker docker-engine docker.io containerd runc docker-compose || true
-rm -rf /var/lib/docker
-rm -rf /var/lib/containerd
-
+# Actualizar paquetes APT
 apt-get update
 
-# Paquetes base
-apt-get install -y ca-certificates curl gnupg lsb-release
+# Instalar los paquetes necesarios para configurar el repositorio oficial de Docker
+apt-get install \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release -y
 
-# =========================
-# UBUNTU
-# =========================
-if [[ "$ID" == "ubuntu" ]]; then
-  echo "Instalando Docker para Ubuntu..."
+# Agregar la clave GPG oficial de Docker
+ mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/$ID/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 
-  mkdir -p /etc/apt/keyrings
-  curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
-    | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+# Añadir el repositorio de Docker a APT
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/$ID \
+  $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-  echo \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-    https://download.docker.com/linux/$ID\
-    $VERSION_CODENAME stable" \
-    | tee /etc/apt/sources.list.d/docker.list > /dev/null
+# Activar el repositorio APT de Docker
+apt-get update
 
-  apt-get update
-  apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
 
-# =========================
-# DEBIAN / PROXMOX
-# =========================
-elif [[ "$ID" == "debian" ]]; then
-  echo "Instalando Docker para Debian / Proxmox..."  
-    # Eliminar posibles repositorios Docker erróneos (Ubuntu en Debian)
+docker run hello-world
 
-  echo "Eliminando repositorios Docker incorrectos..." 
-  rm -f /etc/apt/keyrings/docker.gpg
+usermod -aG docker $USER
 
-  echo \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-    https://download.docker.com/linux/$ID\
-    $VERSION_CODENAME stable" \
-    | tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-  apt-get update
-
-  # Docker desde repos oficiales de Debian (más seguro)
-  apt-get install -y docker.io docker-compose-plugin
-
-else
-  echo "❌ Sistema no soportado: $ID"
-  exit 1
-fi
-
-# =========================
-# POST-INSTALACIÓN
-# =========================
-if command -v docker >/dev/null 2>&1; then
-  echo "Docker instalado correctamente"
-  docker --version
-
-  # Crear grupo docker si no existe
-  getent group docker >/dev/null || groupadd docker
-  usermod -aG docker "$USER"
-
-  docker run hello-world || true
-else
-  echo "❌ Docker no se instaló correctamente"
-  exit 1
-fi
-
-echo "✅ Proceso terminado"
-echo "🔁 Reinicia el sistema y ejecuta: docker version"
+echo "Reincia el ordenador y ejecuta 'docker version' para ver la version"
