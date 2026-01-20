@@ -7,7 +7,7 @@ read -p "¿Deseas continuar? (s/N): " confirm
 
 # Detectar sistema operativo
 . /etc/os-release
-echo "Sistema detectado: $ID $VERSION_CODENAME"
+echo "DEBUG: Sistema detectado: ID='$ID', VERSION_CODENAME='$VERSION_CODENAME'"
 
 # Eliminar Docker previo (común)
 apt-get remove --purge -y docker docker-engine docker.io containerd runc docker-compose || true
@@ -43,6 +43,10 @@ if [[ "$ID" == "ubuntu" ]]; then
 # =========================
 elif [[ "$ID" == "debian" ]]; then
   echo "Instalando Docker para Debian / Proxmox..."
+
+  # Eliminar el repo docker de Ubuntu si existe
+  rm -f /etc/apt/sources.list.d/docker.list
+  rm -f /etc/apt/keyrings/docker.gpg
 
   # Docker desde repos oficiales de Debian (más seguro)
   apt-get install -y docker.io docker-compose-plugin
