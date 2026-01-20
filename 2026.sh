@@ -2,6 +2,12 @@ echo "Este script eliminara todos los contenedores que hayan previamente"
 read -p "¿Deseas continuar? (s/N): " confirm
 [[ "$confirm" == "s" || "$confirm" == "S" ]] || exit 1
 
+. /etc/os-release
+echo "DEBUG: Sistema detectado: ID='$ID', VERSION_CODENAME='$VERSION_CODENAME'"
+
+rm -f /etc/apt/sources.list.d/docker*.list
+rm -f /etc/apt/keyrings/docker.gpg
+
 sudo apt-get remove --purge docker docker-engine docker.io containerd runc docker-compose
 sudo rm -rf /var/lib/docker
 sudo rm -rf /var/lib/containerd
@@ -18,11 +24,11 @@ sudo apt-get install \
 
 # Agregar la clave GPG oficial de Docker
 sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+curl -fsSL https://download.docker.com/linux/$ID/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 
 # Añadir el repositorio de Docker a APT
 echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/$ID \
   $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 # Activar el repositorio APT de Docker

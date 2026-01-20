@@ -12,7 +12,7 @@ echo "DEBUG: Sistema detectado: ID='$ID', VERSION_CODENAME='$VERSION_CODENAME'"
 rm -f /etc/apt/sources.list.d/docker*.list
 rm -f /etc/apt/keyrings/docker.gpg
 
-if ! grep -r "download.docker.com/linux/ubuntu" /etc/apt/sources.list.d/ > /dev/null 2>&1; the
+if ! grep -r "download.docker.com/linux/ubuntu" /etc/apt/sources.list.d/ > /dev/null 2>&1; then
   echo "✅ Repositorios Docker para Ubuntu eliminados correctamente"
 else
   echo "❌ Quedan referencias a repositorios Docker para Ubuntu"
@@ -63,7 +63,7 @@ elif [[ "$ID" == "debian" ]]; then
     https://download.docker.com/linux/$ID\
     $VERSION_CODENAME stable" \
     | tee /etc/apt/sources.list.d/docker.list > /dev/null
-    
+
   apt-get update
 
   # Docker desde repos oficiales de Debian (más seguro)
