@@ -1,37 +1,73 @@
-echo "Este script eliminara todos los contenedores que hayan previamente"
+#!/usr/bin/env bash
+set -e
+
+echo "⚠️  Este script eliminará Docker y TODOS los contenedores existentes"
 read -p "¿Deseas continuar? (s/N): " confirm
 [[ "$confirm" == "s" || "$confirm" == "S" ]] || exit 1
 
-apt-get remove --purge docker docker-engine docker.io containerd runc docker-compose
+# Detectar sistema operativo
+. /etc/os-release
+echo "Sistema detectado: $ID $VERSION_CODENAME"
+
+# Eliminar Docker previo (común)
+apt-get remove --purge -y docker docker-engine docker.io containerd runc docker-compose || true
 rm -rf /var/lib/docker
 rm -rf /var/lib/containerd
 
-# Actualizar paquetes APT
 apt-get update
 
-# Instalar los paquetes necesarios para configurar el repositorio oficial de Docker
-apt-get install \
-    ca-certificates \
-    curl \
-    gnupg \
-    lsb-release -y
+# Paquetes base
+apt-get install -y ca-certificates curl gnupg lsb-release
 
-# Agregar la clave GPG oficial de Docker
-mkdir -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+# =========================
+# UBUNTU
+# =========================
+if [[ "$ID" == "ubuntu" ]]; then
+  echo "Instalando Docker para Ubuntu..."
 
-# Añadir el repositorio de Docker a APT
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+  mkdir -p /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+    | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 
-# Activar el repositorio APT de Docker
-apt-get update
+  echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+    https://download.docker.com/linux/ubuntu \
+    $VERSION_CODENAME stable" \
+    | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+  apt-get update
+  apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-docker run hello-world
+# =========================
+# DEBIAN / PROXMOX
+# =========================
+elif [[ "$ID" == "debian" ]]; then
+  echo "Instalando Docker para Debian / Proxmox..."
 
-usermod -aG docker $USER
+  # Docker desde repos oficiales de Debian (más seguro)
+  apt-get install -y docker.io docker-compose-plugin
 
-echo "Reincia el ordenador y ejecuta 'docker version' para ver la version"
+else
+  echo "❌ Sistema no soportado: $ID"
+  exit 1
+fi
+
+# =========================
+# POST-INSTALACIÓN
+# =========================
+if command -v docker >/dev/null 2>&1; then
+  echo "Docker instalado correctamente"
+  docker --version
+
+  # Crear grupo docker si no existe
+  getent group docker >/dev/null || groupadd docker
+  usermod -aG docker "$USER"
+
+  docker run hello-world || true
+else
+  echo "❌ Docker no se instaló correctamente"
+  exit 1
+fi
+
+echo "✅ Proceso terminado"
+echo "🔁 Reinicia el sistema y ejecuta: docker version"
