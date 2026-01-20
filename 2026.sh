@@ -1,4 +1,6 @@
 echo "Este script eliminara todos los contenedores que hayan previamente"
+read -p "¿Deseas continuar? (s/N): " confirm
+[[ "$confirm" == "s" || "$confirm" == "S" ]] || exit 1
 
 sudo apt-get remove --purge docker docker-engine docker.io containerd runc docker-compose
 sudo rm -rf /var/lib/docker

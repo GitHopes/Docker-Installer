@@ -1,4 +1,6 @@
 echo "Este script eliminara todos los contenedores que hayan previamente"
+read -p "¿Deseas continuar? (s/N): " confirm
+[[ "$confirm" == "s" || "$confirm" == "S" ]] || exit 1
 
 apt-get remove --purge docker docker-engine docker.io containerd runc docker-compose
 rm -rf /var/lib/docker
@@ -15,7 +17,7 @@ apt-get install \
     lsb-release -y
 
 # Agregar la clave GPG oficial de Docker
-kdir -p /etc/apt/keyrings
+mkdir -p /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 
 # Añadir el repositorio de Docker a APT
