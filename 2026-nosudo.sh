@@ -9,6 +9,16 @@ read -p "¿Deseas continuar? (s/N): " confirm
 . /etc/os-release
 echo "DEBUG: Sistema detectado: ID='$ID', VERSION_CODENAME='$VERSION_CODENAME'"
 
+rm -f /etc/apt/sources.list.d/docker*.list
+rm -f /etc/apt/keyrings/docker.gpg
+
+if ! grep -r "download.docker.com/linux/ubuntu" /etc/apt/sources.list.d/ > /dev/null 2>&1; the
+  echo "✅ Repositorios Docker para Ubuntu eliminados correctamente"
+else
+  echo "❌ Quedan referencias a repositorios Docker para Ubuntu"
+  exit 1
+fi
+
 # Eliminar Docker previo (común)
 apt-get remove --purge -y docker docker-engine docker.io containerd runc docker-compose || true
 rm -rf /var/lib/docker
@@ -31,7 +41,7 @@ if [[ "$ID" == "ubuntu" ]]; then
 
   echo \
     "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-    https://download.docker.com/linux/ubuntu \
+    https://download.docker.com/linux/$ID\
     $VERSION_CODENAME stable" \
     | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
@@ -44,23 +54,18 @@ if [[ "$ID" == "ubuntu" ]]; then
 elif [[ "$ID" == "debian" ]]; then
   echo "Instalando Docker para Debian / Proxmox..."  
     # Eliminar posibles repositorios Docker erróneos (Ubuntu en Debian)
-echo "Eliminando repositorios Docker incorrectos..."
-rm -f 
-rm -f /etc/apt/keyrings/docker.gpg
 
-# Confirmar eliminación
-
-
-apt-get update
-  # Eliminar el repo docker de Ubuntu si existe
-  rm -f /etc/apt/sources.list.d/docker*.list
+  echo "Eliminando repositorios Docker incorrectos..." 
   rm -f /etc/apt/keyrings/docker.gpg
-  if ! grep -r "download.docker.com/linux/ubuntu" /etc/apt/sources.list.d/ > /dev/null 2>&1; then
-    echo "✅ Repositorios Docker para Ubuntu eliminados correctamente"
-  else
-    echo "❌ Quedan referencias a repositorios Docker para Ubuntu"
-    exit 1
-  fi
+
+  echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+    https://download.docker.com/linux/$ID\
+    $VERSION_CODENAME stable" \
+    | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    
+  apt-get update
+
   # Docker desde repos oficiales de Debian (más seguro)
   apt-get install -y docker.io docker-compose-plugin
 
